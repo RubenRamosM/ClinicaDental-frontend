@@ -1,5 +1,6 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { getTenantInfo } from "../utils/tenant";
 
 function getDisplayData(authUser: any) {
   let lsUser: any = null;
@@ -18,6 +19,7 @@ export default function TopBar() {
   const { isAuth, user, logout } = useAuth();
   const navigate = useNavigate();
   const { displayName, email, initial } = getDisplayData(user);
+  const tenantInfo = getTenantInfo();
 
   const handleLogout = () => {
     logout();
@@ -32,7 +34,15 @@ export default function TopBar() {
             <div className="w-9 h-9 sm:w-10 sm:h-10 bg-gradient-to-br from-cyan-500 to-teal-600 rounded-2xl grid place-items-center shadow">
               <img src="/dentist.svg" alt="Clínica Dental" className="w-5 h-5 sm:w-6 sm:h-6" />
             </div>
-            <h1 className="text-lg sm:text-2xl font-bold text-gray-800">Clínica Dental</h1>
+            <div>
+              <h1 className="text-lg sm:text-2xl font-bold text-gray-800">Clínica Dental</h1>
+              {/* 🌐 Indicador de Tenant */}
+              {!tenantInfo.isPublic && (
+                <p className="text-xs text-cyan-600 font-medium">
+                  {tenantInfo.displayName}
+                </p>
+              )}
+            </div>
           </Link>
 
           {!isAuth ? (

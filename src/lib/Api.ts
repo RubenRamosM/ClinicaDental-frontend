@@ -1,16 +1,19 @@
 import axios, { AxiosHeaders } from "axios";
-import type { AxiosInstance, Method, InternalAxiosRequestConfig } from "axios";
+import type { AxiosInstance, InternalAxiosRequestConfig } from "axios";
+import { getApiBaseUrl, getTenantHeader, getTenantInfo } from '../utils/tenant';
 
-// Configuración simple de la API sin multi-tenancy
-const baseURL: string = import.meta.env.VITE_API_BASE || "http://localhost:8001/api/v1";
+// 🌐 Configuración dinámica de la API con multi-tenancy
+const baseURL = getApiBaseUrl();
 
 console.log("🔧 API Configuration:");
 console.log("- Environment:", import.meta.env.DEV ? "development" : "production");
+console.log("- Tenant:", getTenantInfo().tenantId);
 console.log("- baseURL:", baseURL);
 
 export const Api: AxiosInstance = axios.create({
   baseURL,
   withCredentials: true,
+  timeout: 30000,
 });
 
 export interface User {
@@ -55,7 +58,7 @@ function isAbsoluteUrl(u: string): boolean {
   return /^https?:\/\//i.test(u);
 }
 
-// 👉 Interceptor: normaliza URL para evitar doble "/api" y agrega CSRF en métodos mutantes
+// 👉 Interceptor: normaliza URL para evitar doble "/api" y agrega headers de tenant
 Api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   // --- Normalización anti "/api/api/..." ---
   if (typeof config.url === "string" && !isAbsoluteUrl(config.url)) {
@@ -73,18 +76,51 @@ Api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
     config.url = url;
   }
 
-  // --- Headers ---
-  // NOTA: Este backend NO usa CSRF, usa Token Authentication
-  // El token se añade automáticamente en AuthContext cuando existe
+  // --- Headers de Multi-Tenancy ---
+  const tenantHeaders = getTenantHeader();
   const hdrs = AxiosHeaders.from(config.headers);
+  
+  // Agregar headers de tenant
+  Object.entries(tenantHeaders).forEach(([key, value]) => {
+    hdrs.set(key, value);
+  });
+  
   config.headers = hdrs;
+  
+  // Log para debugging en desarrollo
+  if (import.meta.env.DEV) {
+    console.log(`[API] ${config.method?.toUpperCase()} ${config.url}`, {
+      tenant: getTenantInfo().tenantId,
+      tenantHeaders
+    });
+  }
+  
   return config;
 });
 
-// Interceptor de respuesta - Solo errores
+// Interceptor de respuesta - Manejo de errores y multi-tenancy
 Api.interceptors.response.use(
   (response) => response,
   (error) => {
+    // Error 404: Tenant no encontrado
+    if (error.response?.status === 404 && error.response?.data?.error?.includes('tenant')) {
+      console.error('❌ Tenant no encontrado:', getTenantInfo().tenantId);
+      // Redirigir al público
+      window.location.href = import.meta.env.DEV 
+        ? 'http://localhost:5173'
+        : 'https://psicoadmin.xyz';
+    }
+    
+    // Error 401: No autenticado
+    if (error.response?.status === 401) {
+      console.warn('⚠️ Token expirado o inválido - redirigiendo a login');
+      localStorage.removeItem('access_token');
+      localStorage.removeItem('userData');
+      if (window.location.pathname !== '/login') {
+        window.location.href = '/login';
+      }
+    }
+    
     console.error("❌ API Error:", error.config?.url, error.response?.status, error.response?.data || error.message);
     return Promise.reject(error);
   }
