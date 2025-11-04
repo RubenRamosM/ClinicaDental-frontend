@@ -71,7 +71,7 @@ export const getApiBaseUrl = (): string => {
   // El backend maneja el routing por subdominio
   if (subdomain) {
     // Opción 1: Subdominios separados (si los configuras en Render)
-    // return `https://${subdomain}.psicoadmin.xyz/api/v1`;
+    // return `https://${subdomain}.dentaabcxy.store/api/v1`;
     
     // Opción 2: Enviar header personalizado al mismo backend
     return import.meta.env.VITE_API_BASE || 'https://clinicadental-backend.onrender.com/api/v1';
