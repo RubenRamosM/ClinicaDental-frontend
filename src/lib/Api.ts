@@ -172,6 +172,46 @@ export const obtenerHorariosDisponibles = async (fecha: string, odontologoId: nu
   }
 };
 
+// ============================================
+// UTILIDADES MULTI-TENANCY
+// ============================================
+
+/**
+ * Manejo genérico de errores de API
+ */
+export const handleApiError = (error: any, customMessage = '') => {
+  const message = error.response?.data?.error 
+    || error.response?.data?.message 
+    || error.message 
+    || customMessage
+    || 'Ocurrió un error inesperado';
+  
+  return {
+    message,
+    status: error.response?.status,
+    data: error.response?.data
+  };
+};
+
+/**
+ * Verificar conexión con el backend y obtener info del tenant
+ */
+export const checkConnection = async () => {
+  try {
+    const response = await Api.get('/');
+    return {
+      connected: true,
+      tenant: response.data.tenant,
+      version: response.data.version
+    };
+  } catch (error: any) {
+    return {
+      connected: false,
+      error: handleApiError(error)
+    };
+  }
+};
+
 
 
 
