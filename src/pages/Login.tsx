@@ -7,6 +7,7 @@ import LoginBackend, {
   type LoginError,
 } from "../components/LoginBackend";
 import { useAuth } from "../context/AuthContext";
+import TenantDebug from "../components/TenantDebug";
 
 const Login = () => {
   const [email, setEmail] = useState("");
@@ -123,6 +124,7 @@ const Login = () => {
   return (
       <>
         <LoginBackend payload={loginPayload} onDone={handleLoginResult} />
+        <TenantDebug />
 
         <div className="min-h-screen bg-gradient-to-br from-cyan-50 via-blue-50 to-cyan-100 flex items-center justify-center p-4">
           {/* Background Pattern */}
