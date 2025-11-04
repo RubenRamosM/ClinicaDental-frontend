@@ -1,0 +1,50 @@
+# Archivos de desarrollo
+.env
+.env.local
+.env.development
+
+# Node modules
+node_modules
+
+# Archivos de testing
+*.test.ts
+*.test.tsx
+*.test.js
+*.test.jsx
+*.spec.ts
+*.spec.tsx
+
+# Archivos de Python (seeders)
+*.py
+*.pyc
+__pycache__
+
+# Archivos de datos de prueba
+salida_*.json
+test_*.txt
+test_*.html
+seed_database.py
+flujo_*.py
+pruebas_flujo_completo.http
+
+# Archivos de documentación grandes
+*.md
+!README.md
+
+# Git
+.git
+.gitignore
+
+# IDE
+.vscode
+.idea
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Temporal
+*.tmp
+*.temp
