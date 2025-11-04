@@ -20,7 +20,7 @@ export const getTenantInfo = (): TenantInfo => {
   
   // Configuración desde .env
   const isDevelopment = import.meta.env.DEV;
-  const baseDomain = import.meta.env.VITE_DOMAIN_BASE || 'psicoadmin.xyz';
+  const baseDomain = import.meta.env.VITE_DOMAIN_BASE || 'dentaabcxy.store';
   
   let subdomain: string | null = null;
   let isPublic = false;
@@ -35,13 +35,13 @@ export const getTenantInfo = (): TenantInfo => {
       isPublic = true;
     }
   }
-  // PRODUCCIÓN (*.psicoadmin.xyz)
+  // PRODUCCIÓN (*.dentaabcxy.store o cualquier dominio configurado)
   else {
     if (parts.length > 2) {
-      // clinica1.psicoadmin.xyz -> subdomain = 'clinica1'
+      // clinica1.dentaabcxy.store -> subdomain = 'clinica1'
       subdomain = parts[0];
     } else if (hostname === baseDomain || hostname === `www.${baseDomain}`) {
-      // psicoadmin.xyz o www.psicoadmin.xyz -> tenant público
+      // dentaabcxy.store o www.dentaabcxy.store -> tenant público
       isPublic = true;
     }
   }
@@ -107,6 +107,7 @@ export const validateTenantAccess = (userTenant: string, currentTenant: string):
  */
 export const redirectToTenant = (tenantId: string): void => {
   const isDevelopment = import.meta.env.DEV;
+  const baseDomain = import.meta.env.VITE_DOMAIN_BASE || 'dentaabcxy.store';
   const currentTenant = getTenantInfo().tenantId;
   
   // Ya está en el tenant correcto
@@ -122,8 +123,8 @@ export const redirectToTenant = (tenantId: string): void => {
       : `http://${tenantId}.localhost:5173`;
   } else {
     targetUrl = tenantId === 'public'
-      ? 'https://psicoadmin.xyz'
-      : `https://${tenantId}.psicoadmin.xyz`;
+      ? `https://${baseDomain}`
+      : `https://${tenantId}.${baseDomain}`;
   }
   
   // Redirigir
@@ -135,6 +136,7 @@ export const redirectToTenant = (tenantId: string): void => {
  */
 export const getTenantUrl = (tenantId: string): string => {
   const isDevelopment = import.meta.env.DEV;
+  const baseDomain = import.meta.env.VITE_DOMAIN_BASE || 'dentaabcxy.store';
   
   if (isDevelopment) {
     return tenantId === 'public' 
@@ -143,6 +145,6 @@ export const getTenantUrl = (tenantId: string): string => {
   }
   
   return tenantId === 'public'
-    ? 'https://psicoadmin.xyz'
-    : `https://${tenantId}.psicoadmin.xyz`;
+    ? `https://${baseDomain}`
+    : `https://${tenantId}.${baseDomain}`;
 };
