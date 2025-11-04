@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Multitenancy - Clínica Dental</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 900px;
+            margin: 50px auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .container {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+        h1 {
+            color: #667eea;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 10px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            border-left: 4px solid #667eea;
+        }
+        .result {
+            margin: 10px 0;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        .warning {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 5px;
+            transition: all 0.3s;
+        }
+        button:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        .urls {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 10px;
+            margin: 15px 0;
+        }
+        .url-card {
+            padding: 15px;
+            background: white;
+            border: 2px solid #667eea;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .url-card a {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: bold;
+        }
+        .url-card a:hover {
+            text-decoration: underline;
+        }
+        .badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-left: 8px;
+        }
+        .badge-success { background: #28a745; color: white; }
+        .badge-warning { background: #ffc107; color: #000; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Test Multitenancy - Frontend</h1>
+        
+        <div class="test-section">
+            <h2>📍 Información Actual</h2>
+            <div id="currentInfo" class="result info">Cargando...</div>
+        </div>
+
+        <div class="test-section">
+            <h2>🔍 Pruebas Automáticas</h2>
+            <button onclick="runAllTests()">▶️ Ejecutar Todas las Pruebas</button>
+            <div id="testResults"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>🌐 URLs de Prueba</h2>
+            <p>Abre estas URLs para probar diferentes tenants:</p>
+            <div class="urls">
+                <div class="url-card">
+                    <strong>Sistema Central</strong>
+                    <br><a href="http://localhost:5173" target="_blank">localhost:5173</a>
+                    <span class="badge badge-warning">Público</span>
+                </div>
+                <div class="url-card">
+                    <strong>Clínica Norte</strong>
+                    <br><a href="http://norte.localhost:5173" target="_blank">norte.localhost:5173</a>
+                    <span class="badge badge-success">Tenant</span>
+                </div>
+                <div class="url-card">
+                    <strong>Clínica Sur</strong>
+                    <br><a href="http://sur.localhost:5173" target="_blank">sur.localhost:5173</a>
+                    <span class="badge badge-success">Tenant</span>
+                </div>
+                <div class="url-card">
+                    <strong>Clínica Este</strong>
+                    <br><a href="http://este.localhost:5173" target="_blank">este.localhost:5173</a>
+                    <span class="badge badge-success">Tenant</span>
+                </div>
+                <div class="url-card">
+                    <strong>Clínica Oeste</strong>
+                    <br><a href="http://oeste.localhost:5173" target="_blank">oeste.localhost:5173</a>
+                    <span class="badge badge-success">Tenant</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h2>📋 Instrucciones</h2>
+            <ol>
+                <li>Asegúrate que el servidor Vite esté corriendo (<code>npm run dev</code>)</li>
+                <li>Haz clic en "Ejecutar Todas las Pruebas"</li>
+                <li>Revisa los resultados abajo</li>
+                <li>Abre las URLs de prueba en diferentes pestañas</li>
+                <li>Abre DevTools (F12) y verifica los logs</li>
+            </ol>
+        </div>
+    </div>
+
+    <script>
+        // Simular getTenantInfo (ya que no podemos importar del proyecto directamente)
+        function getTenantInfo() {
+            const hostname = window.location.hostname;
+            const parts = hostname.split('.');
+            
+            let subdomain = null;
+            let isPublic = false;
+            
+            if (hostname.includes('localhost')) {
+                if (parts.length > 1 && parts[0] !== 'localhost') {
+                    subdomain = parts[0];
+                } else {
+                    isPublic = true;
+                }
+            } else {
+                if (parts.length > 2) {
+                    subdomain = parts[0];
+                } else {
+                    isPublic = true;
+                }
+            }
+            
+            return {
+                subdomain,
+                isPublic,
+                hostname,
+                tenantId: subdomain || 'public',
+                displayName: subdomain ? `Clínica ${subdomain.charAt(0).toUpperCase() + subdomain.slice(1)}` : 'Sistema Central'
+            };
+        }
+
+        // Mostrar información actual
+        function showCurrentInfo() {
+            const info = getTenantInfo();
+            const html = `
+                <strong>🌐 Hostname:</strong> ${info.hostname}<br>
+                <strong>🏢 Tenant ID:</strong> ${info.tenantId}<br>
+                <strong>📝 Display Name:</strong> ${info.displayName}<br>
+                <strong>🔓 Es Público:</strong> ${info.isPublic ? 'Sí' : 'No'}<br>
+                <strong>🏥 Subdominio:</strong> ${info.subdomain || 'Ninguno'}
+            `;
+            document.getElementById('currentInfo').innerHTML = html;
+        }
+
+        // Ejecutar todas las pruebas
+        function runAllTests() {
+            const results = document.getElementById('testResults');
+            results.innerHTML = '<p>Ejecutando pruebas...</p>';
+            
+            const tests = [];
+            const info = getTenantInfo();
+
+            // Test 1: Detección de hostname
+            tests.push({
+                name: 'Detección de Hostname',
+                pass: info.hostname !== undefined && info.hostname.length > 0,
+                message: info.hostname ? `Hostname detectado: ${info.hostname}` : 'No se pudo detectar el hostname'
+            });
+
+            // Test 2: Tenant ID
+            tests.push({
+                name: 'Tenant ID',
+                pass: info.tenantId !== undefined,
+                message: `Tenant ID: ${info.tenantId}`
+            });
+
+            // Test 3: Display Name
+            tests.push({
+                name: 'Display Name',
+                pass: info.displayName !== undefined && info.displayName.length > 0,
+                message: `Display Name: ${info.displayName}`
+            });
+
+            // Test 4: Subdomain detection
+            if (info.hostname.includes('localhost')) {
+                const parts = info.hostname.split('.');
+                const hasSubdomain = parts.length > 1 && parts[0] !== 'localhost';
+                tests.push({
+                    name: 'Detección de Subdominio',
+                    pass: hasSubdomain ? info.subdomain !== null : info.subdomain === null,
+                    message: hasSubdomain ? `Subdominio detectado: ${info.subdomain}` : 'Sin subdominio (esperado para localhost)'
+                });
+            }
+
+            // Test 5: Header generado
+            const header = info.subdomain ? { 'X-Tenant-Subdomain': info.subdomain } : {};
+            tests.push({
+                name: 'Header X-Tenant-Subdomain',
+                pass: info.subdomain ? header['X-Tenant-Subdomain'] === info.subdomain : Object.keys(header).length === 0,
+                message: info.subdomain ? `Header generado: X-Tenant-Subdomain: ${header['X-Tenant-Subdomain']}` : 'Sin header (tenant público)'
+            });
+
+            // Mostrar resultados
+            let html = '';
+            tests.forEach((test, index) => {
+                const cssClass = test.pass ? 'success' : 'error';
+                const icon = test.pass ? '✅' : '❌';
+                html += `
+                    <div class="result ${cssClass}">
+                        <strong>${icon} Test ${index + 1}: ${test.name}</strong><br>
+                        ${test.message}
+                    </div>
+                `;
+            });
+
+            const totalTests = tests.length;
+            const passedTests = tests.filter(t => t.pass).length;
+            const summary = `
+                <div class="result ${passedTests === totalTests ? 'success' : 'warning'}">
+                    <strong>📊 Resumen:</strong> ${passedTests}/${totalTests} pruebas pasadas
+                </div>
+            `;
+
+            results.innerHTML = summary + html;
+        }
+
+        // Ejecutar al cargar
+        showCurrentInfo();
+        
+        // Auto-ejecutar tests después de 1 segundo
+        setTimeout(runAllTests, 1000);
+
+        // Log en console
+        console.log('🧪 Test Multitenancy');
+        console.log('Información del tenant:', getTenantInfo());
+    </script>
+</body>
+</html>
