@@ -1,0 +1,3 @@
+  items: ItemPlanTratamiento[];
+  procedimientos?: ItemPlanTratamiento[];  // Lista completa de procedimientos del plan
+  estadisticas: {

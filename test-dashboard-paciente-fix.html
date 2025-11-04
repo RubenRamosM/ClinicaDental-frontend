@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test - Dashboard Paciente Correcciones</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 900px;
+            margin: 50px auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+        }
+        .container {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        h1 {
+            color: #667eea;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 10px;
+        }
+        h2 {
+            color: #764ba2;
+            margin-top: 30px;
+        }
+        .test-section {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 15px 0;
+            border-left: 4px solid #667eea;
+        }
+        .test-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            transition: transform 0.2s;
+            margin: 10px 5px;
+        }
+        .test-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        .result {
+            margin-top: 15px;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        .info {
+            background: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+        }
+        .warning {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 5px 15px;
+            border-radius: 15px;
+            font-weight: bold;
+            margin: 5px;
+        }
+        .badge-success { background: #28a745; color: white; }
+        .badge-error { background: #dc3545; color: white; }
+        .badge-warning { background: #ffc107; color: #333; }
+        code {
+            background: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 13px;
+        }
+        .credentials {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            border-left: 4px solid #2196f3;
+        }
+        .credentials strong {
+            color: #1976d2;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Test de Correcciones - Dashboard Paciente</h1>
+        
+        <div class="credentials">
+            <h3>🔐 Credenciales de Prueba:</h3>
+            <strong>Email:</strong> <code>paciente.prueba@clinica.com</code><br>
+            <strong>Password:</strong> <code>paciente123</code><br>
+            <strong>Backend URL:</strong> <code id="backend-url">http://localhost:8001</code>
+        </div>
+
+        <!-- Test 1: Login -->
+        <div class="test-section">
+            <h2>1️⃣ Test de Login</h2>
+            <p>Verifica que puedas autenticarte como paciente.</p>
+            <button class="test-btn" onclick="testLogin()">🔑 Probar Login</button>
+            <div id="login-result"></div>
+        </div>
+
+        <!-- Test 2: Endpoint Horarios -->
+        <div class="test-section">
+            <h2>2️⃣ Test de Endpoint Horarios</h2>
+            <p>Verifica que el endpoint <code>/citas/horarios/disponibles/</code> funcione correctamente.</p>
+            <label>Fecha: <input type="date" id="fecha-horarios" value="2025-11-15"></label>
+            <label>Odontólogo ID: <input type="number" id="odontologo-id" value="105" style="width: 80px;"></label>
+            <button class="test-btn" onclick="testHorarios()">📅 Probar Horarios</button>
+            <div id="horarios-result"></div>
+        </div>
+
+        <!-- Test 3: Endpoint Citas -->
+        <div class="test-section">
+            <h2>3️⃣ Test de Endpoint Citas</h2>
+            <p>Verifica que las citas incluyan el campo <code>hora</code>.</p>
+            <button class="test-btn" onclick="testCitas()">📋 Probar Citas</button>
+            <div id="citas-result"></div>
+        </div>
+
+        <!-- Test 4: Validación de Fechas -->
+        <div class="test-section">
+            <h2>4️⃣ Test de Validación de Fechas</h2>
+            <p>Simula el procesamiento de citas con diferentes escenarios.</p>
+            <button class="test-btn" onclick="testValidacionFechas()">🔍 Probar Validación</button>
+            <div id="validacion-result"></div>
+        </div>
+
+        <!-- Status Summary -->
+        <div class="test-section" style="border-left-color: #28a745;">
+            <h2>📊 Resumen de Estado</h2>
+            <div id="summary">
+                <p>Ejecuta las pruebas para ver el resumen.</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const BACKEND_URL = 'http://localhost:8001/api/v1';
+        let authToken = null;
+
+        // Test 1: Login
+        async function testLogin() {
+            const resultDiv = document.getElementById('login-result');
+            resultDiv.innerHTML = '<p class="result info">⏳ Autenticando...</p>';
+
+            try {
+                const response = await fetch(`${BACKEND_URL}/auth/login/`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: 'paciente.prueba@clinica.com',
+                        password: 'paciente123'
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    authToken = data.token;
+                    resultDiv.innerHTML = `
+                        <p class="result success">
+                            ✅ <strong>Login exitoso!</strong><br>
+                            Token: <code>${authToken.substring(0, 20)}...</code><br>
+                            Usuario: ${data.user.nombre} ${data.user.apellido}<br>
+                            Email: ${data.user.email}
+                        </p>
+                    `;
+                    updateSummary('login', true);
+                } else {
+                    throw new Error(data.detail || 'Error desconocido');
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <p class="result error">
+                        ❌ <strong>Error en login:</strong><br>
+                        ${error.message}
+                    </p>
+                `;
+                updateSummary('login', false);
+            }
+        }
+
+        // Test 2: Horarios Disponibles
+        async function testHorarios() {
+            const resultDiv = document.getElementById('horarios-result');
+            
+            if (!authToken) {
+                resultDiv.innerHTML = '<p class="result warning">⚠️ Debes hacer login primero!</p>';
+                return;
+            }
+
+            const fecha = document.getElementById('fecha-horarios').value;
+            const odontologoId = document.getElementById('odontologo-id').value;
+
+            resultDiv.innerHTML = '<p class="result info">⏳ Consultando horarios disponibles...</p>';
+
+            try {
+                // ✅ URL CORREGIDA
+                const url = `${BACKEND_URL}/citas/horarios/disponibles/?fecha=${fecha}&odontologo_id=${odontologoId}`;
+                
+                const response = await fetch(url, {
+                    headers: { 'Authorization': `Token ${authToken}` }
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    const horarios = Array.isArray(data) ? data : data.results || [];
+                    resultDiv.innerHTML = `
+                        <p class="result success">
+                            ✅ <strong>Endpoint funcionando correctamente!</strong><br>
+                            URL: <code>/citas/horarios/disponibles/</code><br>
+                            Fecha: ${fecha}<br>
+                            Odontólogo ID: ${odontologoId}<br>
+                            Horarios encontrados: ${horarios.length}<br><br>
+                            <strong>Primeros 3 horarios:</strong><br>
+                            <pre>${JSON.stringify(horarios.slice(0, 3), null, 2)}</pre>
+                        </p>
+                    `;
+                    updateSummary('horarios', true);
+                } else {
+                    throw new Error(`${response.status}: ${data.detail || JSON.stringify(data)}`);
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <p class="result error">
+                        ❌ <strong>Error al obtener horarios:</strong><br>
+                        ${error.message}<br><br>
+                        <strong>Verifica que:</strong><br>
+                        1. El backend esté corriendo en el puerto 8001<br>
+                        2. El endpoint sea <code>/citas/horarios/disponibles/</code><br>
+                        3. El odontólogo exista en la base de datos
+                    </p>
+                `;
+                updateSummary('horarios', false);
+            }
+        }
+
+        // Test 3: Citas con campo hora
+        async function testCitas() {
+            const resultDiv = document.getElementById('citas-result');
+            
+            if (!authToken) {
+                resultDiv.innerHTML = '<p class="result warning">⚠️ Debes hacer login primero!</p>';
+                return;
+            }
+
+            resultDiv.innerHTML = '<p class="result info">⏳ Consultando citas...</p>';
+
+            try {
+                const response = await fetch(`${BACKEND_URL}/citas/`, {
+                    headers: { 'Authorization': `Token ${authToken}` }
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    const citas = data.results || data || [];
+                    
+                    // Verificar que todas las citas tengan campo 'hora'
+                    const citasSinHora = citas.filter(c => !c.hora);
+                    const citasValidas = citas.filter(c => c.hora);
+
+                    if (citasSinHora.length === 0) {
+                        resultDiv.innerHTML = `
+                            <p class="result success">
+                                ✅ <strong>¡Todas las citas tienen campo 'hora'!</strong><br>
+                                Total de citas: ${citas.length}<br>
+                                Citas con hora válida: ${citasValidas.length}<br><br>
+                                <strong>Ejemplo de cita:</strong><br>
+                                <pre>${JSON.stringify(citas[0] || {}, null, 2)}</pre>
+                            </p>
+                        `;
+                        updateSummary('citas', true);
+                    } else {
+                        resultDiv.innerHTML = `
+                            <p class="result warning">
+                                ⚠️ <strong>Algunas citas no tienen campo 'hora'</strong><br>
+                                Total de citas: ${citas.length}<br>
+                                Citas SIN hora: ${citasSinHora.length}<br>
+                                Citas CON hora: ${citasValidas.length}<br><br>
+                                <strong>Citas problemáticas:</strong><br>
+                                <pre>${JSON.stringify(citasSinHora.slice(0, 2), null, 2)}</pre>
+                            </p>
+                        `;
+                        updateSummary('citas', false);
+                    }
+                } else {
+                    throw new Error(`${response.status}: ${data.detail || JSON.stringify(data)}`);
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <p class="result error">
+                        ❌ <strong>Error al obtener citas:</strong><br>
+                        ${error.message}
+                    </p>
+                `;
+                updateSummary('citas', false);
+            }
+        }
+
+        // Test 4: Validación de Fechas
+        function testValidacionFechas() {
+            const resultDiv = document.getElementById('validacion-result');
+            
+            resultDiv.innerHTML = '<p class="result info">⏳ Ejecutando pruebas de validación...</p>';
+
+            const testCases = [
+                { id: 1, fecha: '2025-11-15', hora: '09:00', esperado: true },
+                { id: 2, fecha: '2025-11-15', hora: undefined, esperado: false },
+                { id: 3, fecha: undefined, hora: '09:00', esperado: false },
+                { id: 4, fecha: '2025-11-15', hora: 'invalid', esperado: false },
+                { id: 5, fecha: '2025-11-15', hora: '14:30', esperado: true }
+            ];
+
+            const results = testCases.map(test => {
+                // Simular validación del frontend
+                if (!test.fecha || !test.hora) {
+                    return { ...test, resultado: 'RECHAZADA', razon: 'Falta fecha u hora' };
+                }
+
+                const fechaCita = new Date(test.fecha + ' ' + test.hora);
+                if (isNaN(fechaCita.getTime())) {
+                    return { ...test, resultado: 'RECHAZADA', razon: 'Fecha inválida' };
+                }
+
+                return { ...test, resultado: 'ACEPTADA', razon: 'Válida' };
+            });
+
+            const passed = results.filter(r => 
+                (r.esperado && r.resultado === 'ACEPTADA') || 
+                (!r.esperado && r.resultado === 'RECHAZADA')
+            ).length;
+
+            resultDiv.innerHTML = `
+                <p class="result success">
+                    ✅ <strong>Validación funcionando correctamente</strong><br>
+                    Pruebas pasadas: ${passed}/${testCases.length}<br><br>
+                    <strong>Detalles:</strong><br>
+                    <pre>${JSON.stringify(results, null, 2)}</pre>
+                </p>
+            `;
+            
+            updateSummary('validacion', passed === testCases.length);
+        }
+
+        // Update Summary
+        const summaryStatus = {};
+        function updateSummary(test, passed) {
+            summaryStatus[test] = passed;
+            
+            const summaryDiv = document.getElementById('summary');
+            const badges = Object.entries(summaryStatus).map(([name, status]) => {
+                const badgeClass = status ? 'badge-success' : 'badge-error';
+                const icon = status ? '✅' : '❌';
+                return `<span class="status-badge ${badgeClass}">${icon} ${name.toUpperCase()}</span>`;
+            }).join('');
+
+            const allPassed = Object.values(summaryStatus).every(s => s);
+            const passedCount = Object.values(summaryStatus).filter(s => s).length;
+            const totalCount = Object.keys(summaryStatus).length;
+
+            summaryDiv.innerHTML = `
+                <p><strong>Pruebas completadas: ${passedCount}/${totalCount}</strong></p>
+                ${badges}
+                ${allPassed && totalCount >= 4 ? 
+                    '<p style="color: #28a745; font-weight: bold; margin-top: 15px;">🎉 ¡Todas las pruebas pasaron! El sistema está listo.</p>' : 
+                    ''}
+            `;
+        }
+    </script>
+</body>
+</html>

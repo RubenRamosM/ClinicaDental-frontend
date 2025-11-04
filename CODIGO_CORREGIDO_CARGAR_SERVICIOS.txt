@@ -1,0 +1,62 @@
+// REEMPLAZAR DESDE LA LÍNEA 68 HASTA LA LÍNEA 110 APROXIMADAMENTE
+// Busca esta sección en CatalogoServicios.tsx:
+
+      const tiempoInicio = Date.now();
+      const response = await obtenerServicios(filtros);
+      const duracion = Date.now() - tiempoInicio;
+      
+      console.log("\n✅ Respuesta recibida en", duracion, "ms");
+      console.log("🔍 Tipo de respuesta:", typeof response);
+      console.log("🔍 Es Array?:", Array.isArray(response));
+      console.log("🔍 Tiene 'results'?:", response && typeof response === 'object' && 'results' in response);
+      
+      // ✅ CORRECCIÓN: Verificar PRIMERO si es array usando el método más confiable
+      if (Array.isArray(response)) {
+        // Backend devuelve array directo
+        console.log("📊 Array directo detectado");
+        console.log("📊 Cantidad de servicios:", response.length);
+        
+        if (response.length > 0) {
+          console.log("🔍 Primer servicio (ejemplo):", JSON.stringify(response[0], null, 2));
+          console.log("📊 Campos disponibles:", Object.keys(response[0]));
+        }
+        
+        setServicios(response);
+        setTotalResultados(response.length);
+        setTotalPaginas(1);
+        
+        console.log("✅ Estado actualizado correctamente");
+        console.log("  - Servicios cargados:", response.length);
+        console.log("  - Total resultados:", response.length);
+        console.log("  - Total páginas: 1");
+      } else if (response && typeof response === 'object' && 'results' in response) {
+        // Backend devuelve objeto paginado
+        console.log("📊 Objeto paginado detectado");
+        console.log("📊 Count:", response.count);
+        console.log("📊 Servicios en results:", response.results?.length || 0);
+        
+        const serviciosArray = response.results || [];
+        const count = response.count || 0;
+        
+        if (serviciosArray.length > 0) {
+          console.log("🔍 Primer servicio (ejemplo):", JSON.stringify(serviciosArray[0], null, 2));
+          console.log("📊 Campos disponibles:", Object.keys(serviciosArray[0]));
+        }
+        
+        setServicios(serviciosArray);
+        setTotalResultados(count);
+        setTotalPaginas(Math.ceil(count / pageSize));
+        
+        console.log("✅ Estado actualizado correctamente");
+        console.log("  - Servicios cargados:", serviciosArray.length);
+        console.log("  - Total resultados:", count);
+        console.log("  - Total páginas:", Math.ceil(count / pageSize));
+      } else {
+        // Formato desconocido
+        console.error("❌ Formato de respuesta desconocido:", response);
+        setServicios([]);
+        setTotalResultados(0);
+        setTotalPaginas(1);
+      }
+      
+      console.log("═══════════════════════════════════════════════════════════════\n\n");

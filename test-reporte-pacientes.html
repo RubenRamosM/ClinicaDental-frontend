@@ -1,0 +1,680 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test - Reporte de Pacientes con Estadísticas</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+
+        h1 {
+            color: #2d3748;
+            margin-bottom: 10px;
+            font-size: 32px;
+        }
+
+        .subtitle {
+            color: #718096;
+            margin-bottom: 30px;
+            font-size: 16px;
+        }
+
+        .test-section {
+            background: #f7fafc;
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 25px;
+            border: 2px solid #e2e8f0;
+        }
+
+        .test-section h2 {
+            color: #4a5568;
+            margin-bottom: 15px;
+            font-size: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .status-idle { background: #e2e8f0; color: #4a5568; }
+        .status-loading { background: #fef3c7; color: #92400e; }
+        .status-success { background: #d1fae5; color: #065f46; }
+        .status-error { background: #fee2e2; color: #991b1b; }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .control-group label {
+            font-size: 13px;
+            font-weight: 600;
+            color: #4a5568;
+        }
+
+        input[type="text"],
+        select {
+            padding: 10px 14px;
+            border: 2px solid #cbd5e0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: all 0.2s;
+            min-width: 200px;
+        }
+
+        input[type="text"]:focus,
+        select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        button {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-secondary {
+            background: #48bb78;
+            color: white;
+        }
+
+        .btn-danger {
+            background: #f56565;
+            color: white;
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        .result-box {
+            background: white;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 20px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .result-box pre {
+            margin: 0;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            line-height: 1.6;
+            color: #2d3748;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .stat-card {
+            background: white;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 32px;
+            font-weight: 700;
+            color: #667eea;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 13px;
+            color: #718096;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            font-size: 13px;
+        }
+
+        thead {
+            background: #f7fafc;
+        }
+
+        th {
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+            color: #4a5568;
+            border-bottom: 2px solid #e2e8f0;
+            text-transform: uppercase;
+            font-size: 11px;
+        }
+
+        td {
+            padding: 12px;
+            border-bottom: 1px solid #e2e8f0;
+            color: #2d3748;
+        }
+
+        tbody tr:hover {
+            background: #f7fafc;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .badge-blue { background: #dbeafe; color: #1e40af; }
+        .badge-gray { background: #f3f4f6; color: #374151; }
+        .badge-green { background: #d1fae5; color: #065f46; }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #718096;
+        }
+
+        .empty-state-icon {
+            font-size: 48px;
+            margin-bottom: 10px;
+        }
+
+        .log-container {
+            background: #1a202c;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 20px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .log-entry {
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            margin-bottom: 5px;
+            color: #e2e8f0;
+        }
+
+        .log-info { color: #63b3ed; }
+        .log-success { color: #68d391; }
+        .log-error { color: #fc8181; }
+        .log-warning { color: #f6ad55; }
+
+        .period-filters {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .period-btn {
+            padding: 8px 16px;
+            border: 2px solid #cbd5e0;
+            border-radius: 8px;
+            background: white;
+            color: #4a5568;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .period-btn:hover {
+            border-color: #667eea;
+            color: #667eea;
+        }
+
+        .period-btn.active {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .spinner {
+            display: inline-block;
+            animation: spin 1s linear infinite;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Test - Reporte de Pacientes con Estadísticas</h1>
+        <p class="subtitle">Prueba del endpoint <code>GET /api/v1/reportes/pacientes/</code></p>
+
+        <!-- Configuración -->
+        <div class="test-section">
+            <h2>
+                ⚙️ Configuración
+                <span id="configStatus" class="status-badge status-idle">Configurar</span>
+            </h2>
+            <div class="controls">
+                <div class="control-group">
+                    <label>URL del Backend</label>
+                    <input type="text" id="backendUrl" value="http://127.0.0.1:8000" placeholder="http://127.0.0.1:8000">
+                </div>
+                <div class="control-group">
+                    <label>Token de Autenticación</label>
+                    <input type="text" id="authToken" placeholder="Ingresa tu token aquí">
+                </div>
+                <button class="btn-secondary" onclick="guardarConfiguracion()">
+                    💾 Guardar Configuración
+                </button>
+            </div>
+        </div>
+
+        <!-- Filtros -->
+        <div class="test-section">
+            <h2>
+                🔍 Filtros de Período
+                <span id="filterStatus" class="status-badge status-idle">Sin Filtro</span>
+            </h2>
+            <div class="period-filters">
+                <button class="period-btn" onclick="aplicarFiltro('hoy')">Hoy</button>
+                <button class="period-btn" onclick="aplicarFiltro('semana')">Semana</button>
+                <button class="period-btn active" onclick="aplicarFiltro('mes')">Mes</button>
+                <button class="period-btn" onclick="aplicarFiltro('anio')">Año</button>
+                <button class="period-btn" onclick="aplicarFiltro('custom')">Personalizado</button>
+            </div>
+            <div id="customDates" style="display: none; margin-top: 15px;">
+                <div class="controls">
+                    <div class="control-group">
+                        <label>Fecha Inicio (DD/MM/YYYY)</label>
+                        <input type="text" id="fechaInicio" placeholder="01/01/2024">
+                    </div>
+                    <div class="control-group">
+                        <label>Fecha Fin (DD/MM/YYYY)</label>
+                        <input type="text" id="fechaFin" placeholder="31/12/2024">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Prueba del Endpoint -->
+        <div class="test-section">
+            <h2>
+                🚀 Prueba del Endpoint
+                <span id="testStatus" class="status-badge status-idle">Listo</span>
+            </h2>
+            <div class="controls">
+                <button class="btn-primary" onclick="probarEndpoint()" id="testBtn">
+                    🧪 Ejecutar Test
+                </button>
+                <button class="btn-danger" onclick="limpiarResultados()">
+                    🗑️ Limpiar
+                </button>
+            </div>
+
+            <!-- Estadísticas -->
+            <div id="statsContainer" style="display: none;">
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-value" id="totalPacientes">0</div>
+                        <div class="stat-label">Total Pacientes</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="promedioCitas">0</div>
+                        <div class="stat-label">Promedio Citas</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="planesActivos">0</div>
+                        <div class="stat-label">Planes Activos</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="periodoMostrado">-</div>
+                        <div class="stat-label">Período</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tabla de Pacientes -->
+            <div id="tableContainer" style="display: none;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Nombre</th>
+                            <th>Email</th>
+                            <th>Teléfono</th>
+                            <th style="text-align: center;">Citas (Período)</th>
+                            <th style="text-align: center;">Citas (Total)</th>
+                            <th style="text-align: center;">Planes</th>
+                            <th>Última Cita</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody">
+                        <!-- Datos dinámicos -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Empty State -->
+            <div id="emptyState" class="empty-state" style="display: none;">
+                <div class="empty-state-icon">📊</div>
+                <p><strong>No se encontraron pacientes</strong></p>
+                <p>Prueba cambiando los filtros de período</p>
+            </div>
+
+            <!-- Resultado JSON -->
+            <div class="result-box" id="resultBox" style="display: none;">
+                <pre id="resultContent"></pre>
+            </div>
+        </div>
+
+        <!-- Log de Consola -->
+        <div class="test-section">
+            <h2>📋 Log de Consola</h2>
+            <div class="log-container" id="logContainer">
+                <div class="log-entry log-info">🔷 Sistema de logs iniciado</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let config = {
+            backendUrl: 'http://127.0.0.1:8000',
+            token: ''
+        };
+
+        let filtroActual = 'mes';
+
+        // Guardar configuración
+        function guardarConfiguracion() {
+            config.backendUrl = document.getElementById('backendUrl').value.trim();
+            config.token = document.getElementById('authToken').value.trim();
+            
+            if (!config.token) {
+                log('⚠️ No se ingresó un token de autenticación', 'warning');
+                alert('Por favor ingresa un token de autenticación');
+                return;
+            }
+
+            document.getElementById('configStatus').className = 'status-badge status-success';
+            document.getElementById('configStatus').textContent = 'Configurado';
+            log('✅ Configuración guardada correctamente', 'success');
+        }
+
+        // Aplicar filtro
+        function aplicarFiltro(tipo) {
+            filtroActual = tipo;
+            
+            // Actualizar UI
+            document.querySelectorAll('.period-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            // Mostrar/ocultar fechas personalizadas
+            if (tipo === 'custom') {
+                document.getElementById('customDates').style.display = 'block';
+                document.getElementById('filterStatus').textContent = 'Personalizado';
+            } else {
+                document.getElementById('customDates').style.display = 'none';
+                const labels = { hoy: 'Hoy', semana: 'Semana', mes: 'Mes', anio: 'Año' };
+                document.getElementById('filterStatus').textContent = labels[tipo];
+            }
+            
+            document.getElementById('filterStatus').className = 'status-badge status-success';
+            log(`🔍 Filtro cambiado a: ${tipo}`, 'info');
+        }
+
+        // Obtener fechas según filtro
+        function obtenerFechas() {
+            const hoy = new Date();
+            let inicio, fin;
+            
+            if (filtroActual === 'custom') {
+                inicio = document.getElementById('fechaInicio').value.trim();
+                fin = document.getElementById('fechaFin').value.trim();
+                if (!inicio || !fin) {
+                    alert('Por favor ingresa fechas de inicio y fin');
+                    return null;
+                }
+                return { fecha_inicio: inicio, fecha_fin: fin };
+            }
+            
+            fin = formatearFecha(hoy);
+            
+            switch (filtroActual) {
+                case 'hoy':
+                    inicio = fin;
+                    break;
+                case 'semana':
+                    const semanaAtras = new Date(hoy);
+                    semanaAtras.setDate(hoy.getDate() - 7);
+                    inicio = formatearFecha(semanaAtras);
+                    break;
+                case 'mes':
+                    const mesAtras = new Date(hoy);
+                    mesAtras.setMonth(hoy.getMonth() - 1);
+                    inicio = formatearFecha(mesAtras);
+                    break;
+                case 'anio':
+                    const anioAtras = new Date(hoy);
+                    anioAtras.setFullYear(hoy.getFullYear() - 1);
+                    inicio = formatearFecha(anioAtras);
+                    break;
+            }
+            
+            return { fecha_inicio: inicio, fecha_fin: fin };
+        }
+
+        // Formatear fecha a DD/MM/YYYY
+        function formatearFecha(date) {
+            const dia = String(date.getDate()).padStart(2, '0');
+            const mes = String(date.getMonth() + 1).padStart(2, '0');
+            const anio = date.getFullYear();
+            return `${dia}/${mes}/${anio}`;
+        }
+
+        // Probar endpoint
+        async function probarEndpoint() {
+            if (!config.token) {
+                alert('Por favor configura tu token primero');
+                return;
+            }
+
+            const fechas = obtenerFechas();
+            if (!fechas) return;
+
+            // Actualizar UI
+            document.getElementById('testStatus').className = 'status-badge status-loading';
+            document.getElementById('testStatus').innerHTML = '<span class="spinner">⏳</span> Cargando...';
+            document.getElementById('testBtn').disabled = true;
+            
+            log('🚀 Iniciando prueba del endpoint...', 'info');
+            log(`📅 Filtros: ${fechas.fecha_inicio} - ${fechas.fecha_fin}`, 'info');
+
+            try {
+                const params = new URLSearchParams(fechas);
+                const url = `${config.backendUrl}/api/v1/reportes/pacientes/?${params.toString()}`;
+                
+                log(`📡 URL: ${url}`, 'info');
+                log(`🔑 Token: ${config.token.substring(0, 20)}...`, 'info');
+
+                const response = await fetch(url, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Token ${config.token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                log(`📊 Status: ${response.status} ${response.statusText}`, 
+                    response.ok ? 'success' : 'error');
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const data = await response.json();
+                log('✅ Datos recibidos correctamente', 'success');
+                
+                mostrarResultados(data);
+                
+                document.getElementById('testStatus').className = 'status-badge status-success';
+                document.getElementById('testStatus').textContent = '✓ Exitoso';
+
+            } catch (error) {
+                log(`❌ Error: ${error.message}`, 'error');
+                document.getElementById('testStatus').className = 'status-badge status-error';
+                document.getElementById('testStatus').textContent = '✗ Error';
+                alert(`Error: ${error.message}`);
+            } finally {
+                document.getElementById('testBtn').disabled = false;
+            }
+        }
+
+        // Mostrar resultados
+        function mostrarResultados(data) {
+            // Mostrar stats
+            document.getElementById('statsContainer').style.display = 'block';
+            document.getElementById('totalPacientes').textContent = data.total_pacientes || 0;
+            
+            const promedio = data.pacientes.length > 0
+                ? (data.pacientes.reduce((sum, p) => sum + (p.estadisticas?.citas_totales || 0), 0) / data.pacientes.length).toFixed(1)
+                : 0;
+            document.getElementById('promedioCitas').textContent = promedio;
+            
+            const planesActivos = data.pacientes.reduce((sum, p) => sum + (p.estadisticas?.planes_activos || 0), 0);
+            document.getElementById('planesActivos').textContent = planesActivos;
+            
+            const inicio = new Date(data.periodo.inicio).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit' });
+            const fin = new Date(data.periodo.fin).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit' });
+            document.getElementById('periodoMostrado').textContent = `${inicio} - ${fin}`;
+
+            // Mostrar tabla o empty state
+            if (data.pacientes.length === 0) {
+                document.getElementById('tableContainer').style.display = 'none';
+                document.getElementById('emptyState').style.display = 'block';
+            } else {
+                document.getElementById('tableContainer').style.display = 'block';
+                document.getElementById('emptyState').style.display = 'none';
+                
+                const tbody = document.getElementById('tableBody');
+                tbody.innerHTML = data.pacientes.map(p => `
+                    <tr>
+                        <td>${p.id}</td>
+                        <td><strong>${p.nombre} ${p.apellido}</strong></td>
+                        <td>${p.email || 'N/A'}</td>
+                        <td>${p.telefono || 'N/A'}</td>
+                        <td style="text-align: center;">
+                            <span class="badge badge-blue">${p.estadisticas?.citas_periodo || 0}</span>
+                        </td>
+                        <td style="text-align: center;">
+                            <span class="badge badge-gray">${p.estadisticas?.citas_totales || 0}</span>
+                        </td>
+                        <td style="text-align: center;">
+                            <span class="badge ${(p.estadisticas?.planes_activos || 0) > 0 ? 'badge-green' : 'badge-gray'}">
+                                ${p.estadisticas?.planes_activos || 0} / ${p.estadisticas?.planes_totales || 0}
+                            </span>
+                        </td>
+                        <td>${p.estadisticas?.ultima_cita ? new Date(p.estadisticas.ultima_cita).toLocaleDateString('es-ES') : 'Sin citas'}</td>
+                    </tr>
+                `).join('');
+            }
+
+            // Mostrar JSON
+            document.getElementById('resultBox').style.display = 'block';
+            document.getElementById('resultContent').textContent = JSON.stringify(data, null, 2);
+        }
+
+        // Limpiar resultados
+        function limpiarResultados() {
+            document.getElementById('statsContainer').style.display = 'none';
+            document.getElementById('tableContainer').style.display = 'none';
+            document.getElementById('emptyState').style.display = 'none';
+            document.getElementById('resultBox').style.display = 'none';
+            document.getElementById('testStatus').className = 'status-badge status-idle';
+            document.getElementById('testStatus').textContent = 'Listo';
+            log('🗑️ Resultados limpiados', 'info');
+        }
+
+        // Logger
+        function log(message, type = 'info') {
+            const logContainer = document.getElementById('logContainer');
+            const entry = document.createElement('div');
+            entry.className = `log-entry log-${type}`;
+            entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            logContainer.appendChild(entry);
+            logContainer.scrollTop = logContainer.scrollHeight;
+        }
+    </script>
+</body>
+</html>

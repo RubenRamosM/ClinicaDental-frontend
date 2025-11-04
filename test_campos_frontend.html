@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Campos Requeridos - Frontend</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        h1 {
+            color: #0891b2;
+        }
+        h2 {
+            color: #0e7490;
+            border-bottom: 2px solid #0891b2;
+            padding-bottom: 10px;
+        }
+        .tipo-buttons {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
+            margin: 20px 0;
+        }
+        button {
+            padding: 15px;
+            font-size: 16px;
+            border: 2px solid #0891b2;
+            background: white;
+            color: #0891b2;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        button:hover {
+            background: #0891b2;
+            color: white;
+        }
+        button.active {
+            background: #0891b2;
+            color: white;
+            font-weight: bold;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f0f9ff;
+            border-left: 4px solid #0891b2;
+            border-radius: 4px;
+        }
+        .error {
+            background: #fee;
+            border-left-color: #dc2626;
+        }
+        .campo {
+            padding: 8px;
+            margin: 5px 0;
+            background: #e0f2fe;
+            border-radius: 4px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .requerido {
+            color: #dc2626;
+            font-weight: bold;
+        }
+        .opcional {
+            color: #059669;
+        }
+        pre {
+            background: #1e293b;
+            color: #e2e8f0;
+            padding: 15px;
+            border-radius: 8px;
+            overflow-x: auto;
+        }
+        .info {
+            background: #fef3c7;
+            border-left: 4px solid #f59e0b;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Test: Endpoint Campos Requeridos</h1>
+        <p><strong>Endpoint:</strong> <code>/api/v1/usuarios/usuarios/crear-usuario/campos-requeridos/</code></p>
+        
+        <div class="info">
+            <strong>⚠️ Importante:</strong> Este test requiere que:
+            <ol>
+                <li>El backend esté corriendo en <code>http://localhost:8001</code></li>
+                <li>Tengas un token de autenticación válido</li>
+            </ol>
+        </div>
+
+        <div>
+            <label for="token"><strong>Token de Autenticación:</strong></label><br>
+            <input 
+                type="text" 
+                id="token" 
+                value="ce54851bd27568e2859ff37a017971075bccbf29"
+                style="width: 100%; padding: 10px; margin: 10px 0; border: 2px solid #0891b2; border-radius: 4px;"
+                placeholder="Ingrese su token aquí"
+            >
+        </div>
+    </div>
+
+    <div class="container">
+        <h2>Seleccione el Tipo de Usuario</h2>
+        <div class="tipo-buttons">
+            <button onclick="testTipo(1)">👤 Paciente (1)</button>
+            <button onclick="testTipo(2)">👨‍⚕️ Odontólogo (2)</button>
+            <button onclick="testTipo(3)">📋 Recepcionista (3)</button>
+            <button onclick="testTipo(4)">⚙️ Administrador (4)</button>
+        </div>
+    </div>
+
+    <div id="resultados"></div>
+
+    <script>
+        const API_BASE = 'http://localhost:8001/api/v1';
+
+        async function testTipo(tipo) {
+            const resultDiv = document.getElementById('resultados');
+            const token = document.getElementById('token').value.trim();
+
+            if (!token) {
+                resultDiv.innerHTML = '<div class="container result error"><strong>❌ Error:</strong> Por favor ingrese un token de autenticación.</div>';
+                return;
+            }
+
+            // Marcar botón activo
+            document.querySelectorAll('.tipo-buttons button').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+
+            resultDiv.innerHTML = '<div class="container"><p>⏳ Cargando...</p></div>';
+
+            try {
+                const response = await fetch(
+                    `${API_BASE}/usuarios/usuarios/crear-usuario/campos-requeridos/?tipo=${tipo}`,
+                    {
+                        headers: {
+                            'Authorization': `Token ${token}`,
+                            'Content-Type': 'application/json'
+                        }
+                    }
+                );
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const data = await response.json();
+                
+                let html = `
+                    <div class="container">
+                        <h2>✅ Respuesta para: ${data.tipo_usuario.nombre}</h2>
+                        
+                        <h3>📋 Campos Requeridos (${data.campos_requeridos.length})</h3>
+                        ${data.campos_requeridos.map(campo => 
+                            `<div class="campo">
+                                <span>${campo}</span>
+                                <span class="requerido">★ REQUERIDO</span>
+                            </div>`
+                        ).join('')}
+
+                        <h3>📝 Campos Opcionales (${data.campos_opcionales.length})</h3>
+                        ${data.campos_opcionales.length > 0 
+                            ? data.campos_opcionales.map(campo => 
+                                `<div class="campo">
+                                    <span>${campo}</span>
+                                    <span class="opcional">○ Opcional</span>
+                                </div>`
+                              ).join('')
+                            : '<p style="color: #6b7280;">Sin campos opcionales</p>'
+                        }
+
+                        <h3>🔍 JSON Completo</h3>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    </div>
+                `;
+
+                resultDiv.innerHTML = html;
+
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="container result error">
+                        <h3>❌ Error</h3>
+                        <p><strong>Mensaje:</strong> ${error.message}</p>
+                        <p><strong>Tipo solicitado:</strong> ${tipo}</p>
+                        <p><strong>Endpoint:</strong> ${API_BASE}/usuarios/usuarios/crear-usuario/campos-requeridos/?tipo=${tipo}</p>
+                    </div>
+                `;
+            }
+        }
+
+        // Auto-test al cargar (Paciente)
+        window.addEventListener('load', () => {
+            console.log('🚀 Test de endpoint de campos requeridos cargado');
+        });
+    </script>
+</body>
+</html>

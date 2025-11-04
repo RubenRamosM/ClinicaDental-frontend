@@ -1,0 +1,110 @@
+{
+  "flujo": {
+    "numero": 9,
+    "nombre": "Pruebas de Integracion con Stripe",
+    "descripcion": "Resultados de la ejecucion del flujo 09"
+  },
+  "ejecucion": {
+    "inicio": "2025-11-03T20:12:45.237966",
+    "fin": "2025-11-03T20:13:04.577309",
+    "duracion_segundos": 19.34,
+    "fecha_legible": "03/11/2025 20:12:45"
+  },
+  "estadisticas": {
+    "total_secciones": 7,
+    "secciones_exitosas": 6,
+    "secciones_fallidas": 1,
+    "tasa_exito_porcentaje": 85.71,
+    "total_errores": 0,
+    "total_datos_creados": 2
+  },
+  "secciones": [
+    {
+      "numero": 1,
+      "nombre": "Autenticacion de Usuarios",
+      "exito": true,
+      "timestamp": "2025-11-03T20:12:50.523376",
+      "detalles": {}
+    },
+    {
+      "numero": 2,
+      "nombre": "Obtener Tipos de Consulta",
+      "exito": true,
+      "timestamp": "2025-11-03T20:12:52.629633",
+      "detalles": {}
+    },
+    {
+      "numero": 3,
+      "nombre": "Crear Payment Intent",
+      "exito": true,
+      "timestamp": "2025-11-03T20:12:56.015081",
+      "detalles": {
+        "codigo_pago": "CITA-9A897F39",
+        "pago_id": 14,
+        "monto": 100.0
+      }
+    },
+    {
+      "numero": 4,
+      "nombre": "Simular Confirmacion de Pago",
+      "exito": true,
+      "timestamp": "2025-11-03T20:12:56.073345",
+      "detalles": {
+        "estado": "aprobado",
+        "nota": "Simulado para testing E2E"
+      }
+    },
+    {
+      "numero": 5,
+      "nombre": "Crear Cita con Pago Vinculado",
+      "exito": true,
+      "timestamp": "2025-11-03T20:12:58.214391",
+      "detalles": {
+        "consulta_id": null,
+        "pago_id": 14
+      }
+    },
+    {
+      "numero": 6,
+      "nombre": "Verificar Vinculacion Pago-Cita",
+      "exito": false,
+      "timestamp": "2025-11-03T20:13:02.449898",
+      "detalles": {}
+    },
+    {
+      "numero": 7,
+      "nombre": "Listar Pagos en Linea",
+      "exito": true,
+      "timestamp": "2025-11-03T20:13:04.577295",
+      "detalles": {}
+    }
+  ],
+  "datos_creados": {
+    "pago": [
+      {
+        "id": 14,
+        "datos": {
+          "codigo_pago": "CITA-9A897F39",
+          "monto": 100.0,
+          "tipo_consulta": "Control"
+        },
+        "timestamp": "2025-11-03T20:12:56.015091"
+      }
+    ],
+    "consulta": [
+      {
+        "id": null,
+        "datos": {
+          "tipo_consulta": "Control",
+          "pago_id": 14
+        },
+        "timestamp": "2025-11-03T20:12:58.214400"
+      }
+    ]
+  },
+  "errores": [],
+  "resumen": {
+    "estado": "CON_ERRORES",
+    "mensaje": "6 secciones exitosas, 1 con errores"
+  }
+}

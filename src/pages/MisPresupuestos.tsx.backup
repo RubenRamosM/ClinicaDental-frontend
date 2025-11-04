@@ -1,0 +1,305 @@
+// src/pages/MisPresupuestos.tsx
+
+import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { toast } from 'react-hot-toast';
+import { 
+  obtenerMisPresupuestos, 
+  aceptarPresupuesto,
+  formatearMonto,
+} from '../services/presupuestosDigitalesService'; // ✅ Servicio correcto
+import { calcularPorcentajePagado } from '../services/pagosService'; // ✅ Helpers de pagos
+import type { PresupuestoDigital } from '../interfaces/PresupuestoDigital'; // ✅ Interfaz correcta
+import { useAuth } from '../context/AuthContext';
+import TopBar from '../components/TopBar';
+
+export default function MisPresupuestos() {
+  const { user } = useAuth();
+  const [presupuestos, setPresupuestos] = useState<PresupuestoDigital[]>([]); // ✅ Tipo correcto
+  const [loading, setLoading] = useState(true);
+  const [procesando, setProcesando] = useState<number | null>(null);
+
+  const cargarPresupuestos = async () => {
+    try {
+      setLoading(true);
+      const response = await obtenerMisPresupuestos();
+      // ✅ La respuesta es paginada, extraer results
+      setPresupuestos(response.results);
+    } catch (error: any) {
+      console.error('Error al cargar presupuestos:', error);
+      toast.error('Error al cargar los presupuestos');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    cargarPresupuestos();
+  }, []);
+
+  const handleAceptar = async (presupuesto: PresupuestoDigital) => {
+    // ✅ NOTA: Este es el flujo correcto de presupuestos digitales
+    // El paciente "acepta" el presupuesto, no lo "aprueba"
+    // Después de aceptar, puede ir a RegistrarPago para pagar
+    
+    if (!window.confirm(`¿Aceptas este presupuesto de ${formatearMonto(presupuesto.total)}?`)) {
+      return;
+    }
+
+    try {
+      setProcesando(presupuesto.id);
+      
+      // Construir firma digital (requerido por el backend)
+      const firmaDigital = {
+        timestamp: new Date().toISOString(),
+        user_id: user!.id,
+        signature_hash: 'temporal', // En producción usar construirFirmaDigital()
+        consent_text: `Acepto el presupuesto ${presupuesto.codigo_corto} por un total de ${formatearMonto(presupuesto.total)}`,
+        ip_address: window.location.hostname,
+      };
+      
+      await aceptarPresupuesto(presupuesto.id, {
+        tipo_aceptacion: 'Total', // ✅ Capitalizado según interface
+        firma_digital: firmaDigital,
+        notas: 'Aceptación desde portal del paciente',
+      });
+      
+      toast.success('¡Presupuesto aceptado! Ahora puedes registrar pagos.');
+      cargarPresupuestos();
+    } catch (error: any) {
+      console.error('Error al aceptar presupuesto:', error);
+      toast.error(error.response?.data?.detail || 'Error al aceptar el presupuesto');
+    } finally {
+      setProcesando(null);
+    }
+  };
+
+  const formatFecha = (fecha: string) => {
+    return new Date(fecha).toLocaleDateString('es-BO', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    });
+  };
+
+  const getEstadoBadge = (estado: string) => {
+    const badges = {
+      pendiente: { label: 'Pendiente', class: 'bg-yellow-100 text-yellow-800', icon: '⏳' },
+      aprobado: { label: 'Aprobado', class: 'bg-green-100 text-green-800', icon: '✅' },
+      rechazado: { label: 'Rechazado', class: 'bg-red-100 text-red-800', icon: '❌' },
+      vencido: { label: 'Vencido', class: 'bg-gray-100 text-gray-800', icon: '⏰' },
+    };
+    return badges[estado as keyof typeof badges] || badges.pendiente;
+  };
+
+  const esVencido = (presupuesto: PresupuestoDigital) => {
+    if (!presupuesto.fecha_vigencia) return false;
+    return new Date(presupuesto.fecha_vigencia) < new Date();
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <TopBar />
+        <div className="flex items-center justify-center h-96">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+            <p className="mt-4 text-gray-600">Cargando presupuestos...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <TopBar />
+
+      <div className="max-w-7xl mx-auto px-4 py-8">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900">Mis Presupuestos</h1>
+          <p className="text-gray-600 mt-2">
+            Revisa y administra tus presupuestos de tratamiento
+          </p>
+        </div>
+
+        {/* Filtros */}
+        <div className="bg-white rounded-lg shadow-md p-4 mb-6">
+          <div className="flex flex-wrap gap-3">
+            {['todos', 'pendiente', 'aprobado', 'rechazado'].map((filtro) => (
+              <button
+                key={filtro}
+                className="px-4 py-2 rounded-lg text-sm font-medium transition-colors
+                         bg-gray-100 hover:bg-gray-200 text-gray-700"
+              >
+                {filtro.charAt(0).toUpperCase() + filtro.slice(1)}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Lista de Presupuestos */}
+        {presupuestos.length === 0 ? (
+          <div className="bg-white rounded-lg shadow-md p-12 text-center">
+            <svg className="w-16 h-16 mx-auto text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            <p className="text-gray-600 text-lg">No tienes presupuestos aún</p>
+            <p className="text-gray-500 text-sm mt-2">
+              Los presupuestos aparecerán aquí cuando tu odontólogo cree un plan de tratamiento
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 gap-6">
+            {presupuestos.map((presupuesto) => {
+              const badge = getEstadoBadge(presupuesto.estado);
+              const vencido = esVencido(presupuesto);
+              const porcentajePagado = calcularPorcentajePagado(presupuesto.total_pagado, presupuesto.total);
+
+              return (
+                <div key={presupuesto.id} className="bg-white rounded-lg shadow-md overflow-hidden">
+                  <div className="p-6">
+                    {/* Header */}
+                    <div className="flex justify-between items-start mb-4">
+                      <div>
+                        <h3 className="text-xl font-semibold text-gray-900">
+                          {presupuesto.codigo}
+                        </h3>
+                        <p className="text-sm text-gray-600 mt-1">
+                          Creado el {formatFecha(presupuesto.fecha_creacion)}
+                        </p>
+                      </div>
+                      <span className={`px-3 py-1 rounded-full text-xs font-medium ${badge.class}`}>
+                        {badge.icon} {badge.label}
+                      </span>
+                    </div>
+
+                    {/* Alerta de vencimiento */}
+                    {presupuesto.estado === 'pendiente' && vencido && (
+                      <div className="mb-4 bg-red-50 border border-red-200 rounded-lg p-3">
+                        <p className="text-sm text-red-700">
+                          ⚠️ Este presupuesto ha vencido. Contacta a tu odontólogo para solicitar uno nuevo.
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Resumen Financiero */}
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4 p-4 bg-gray-50 rounded-lg">
+                      <div>
+                        <div className="text-xs text-gray-600">Subtotal</div>
+                        <div className="text-lg font-semibold text-gray-900">
+                          {formatearMonto(presupuesto.subtotal)}
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-xs text-gray-600">Descuento</div>
+                        <div className="text-lg font-semibold text-green-600">
+                          -{formatearMonto(presupuesto.descuento)}
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-xs text-gray-600">Total</div>
+                        <div className="text-lg font-bold text-gray-900">
+                          {formatearMonto(presupuesto.total)}
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-xs text-gray-600">Saldo Pendiente</div>
+                        <div className="text-lg font-semibold text-orange-600">
+                          {formatearMonto(presupuesto.saldo_pendiente)}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Progreso de pago */}
+                    {presupuesto.estado === 'aprobado' && (
+                      <div className="mb-4">
+                        <div className="flex justify-between text-sm mb-1">
+                          <span className="text-gray-600">Progreso de Pago</span>
+                          <span className="font-medium text-gray-900">{porcentajePagado}%</span>
+                        </div>
+                        <div className="w-full bg-gray-200 rounded-full h-2">
+                          <div
+                            className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                            style={{ width: `${porcentajePagado}%` }}
+                          ></div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Items del presupuesto */}
+                    {presupuesto.items && presupuesto.items.length > 0 && (
+                      <div className="mb-4">
+                        <h4 className="text-sm font-medium text-gray-700 mb-2">
+                          Servicios incluidos ({presupuesto.items.length})
+                        </h4>
+                        <div className="space-y-2">
+                          {presupuesto.items.slice(0, 3).map((item, idx) => (
+                            <div key={idx} className="flex justify-between text-sm">
+                              <span className="text-gray-600">
+                                {item.servicio_nombre}
+                                {item.pieza_dental_nombre && ` (${item.pieza_dental_nombre})`}
+                              </span>
+                              <span className="font-medium">{formatearMonto(item.subtotal)}</span>
+                            </div>
+                          ))}
+                          {presupuesto.items.length > 3 && (
+                            <p className="text-xs text-gray-500">
+                              + {presupuesto.items.length - 3} servicios más
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Notas */}
+                    {presupuesto.notas && (
+                      <div className="mb-4 p-3 bg-blue-50 rounded-lg">
+                        <p className="text-sm text-gray-700">
+                          <strong>Nota:</strong> {presupuesto.notas}
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Acciones */}
+                    <div className="flex flex-wrap gap-3">
+                      {presupuesto.estado === 'pendiente' && !vencido && (
+                        <button
+                          onClick={() => handleAceptar(presupuesto)}
+                          disabled={procesando === presupuesto.id}
+                          className="flex-1 min-w-[150px] px-4 py-2 bg-green-600 text-white rounded-lg
+                                   hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed
+                                   transition-colors font-medium"
+                        >
+                          {procesando === presupuesto.id ? 'Procesando...' : '✅ Aceptar Presupuesto'}
+                        </button>
+                      )}
+
+                      {presupuesto.estado === 'aprobado' && (
+                        <Link
+                          to={`/registrar-pago/${presupuesto.plan_tratamiento}`}
+                          className="flex-1 min-w-[150px] px-4 py-2 bg-blue-600 text-white rounded-lg
+                                   hover:bg-blue-700 transition-colors font-medium text-center"
+                        >
+                          💰 Ver Historial de Pagos
+                        </Link>
+                      )}
+
+                      {presupuesto.estado === 'rechazado' && presupuesto.motivo_rechazo && (
+                        <div className="flex-1 p-3 bg-gray-50 rounded-lg">
+                          <p className="text-sm text-gray-700">
+                            <strong>Motivo del rechazo:</strong> {presupuesto.motivo_rechazo}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
